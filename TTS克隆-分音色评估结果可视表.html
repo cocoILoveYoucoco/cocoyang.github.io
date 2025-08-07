@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>语音模型评估看板</title>
+    <script src="https://cdn.tailwindcss.com/3.3.3"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        body {
+            font-family: 'Noto Sans SC', sans-serif;
+            background-color: #f8fafc;
+        }
+        .chart-container {
+            height: 400px;
+            position: relative;
+            margin-bottom: 2rem;
+        }
+        .chart-card {
+            background-color: white;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        .download-btn {
+            background-color: #3b82f6;
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 0.375rem;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        .download-btn:hover {
+            background-color: #2563eb;
+            transform: translateY(-1px);
+        }
+    </style>
+</head>
+<body class="min-h-screen py-8 px-4 md:px-8">
+    <div class="max-w-6xl mx-auto">
+        <h1 class="text-3xl font-bold text-gray-800 mb-8 text-center">语音模型评估看板</h1>
+        
+        <!-- 稳定性评估 -->
+        <div class="chart-card">
+            <h2 class="text-xl font-semibold text-gray-700 mb-4">稳定性评估结果</h2>
+            <div class="chart-container">
+                <canvas id="stabilityChart"></canvas>
+            </div>
+            <button class="download-btn" onclick="downloadChart('stabilityChart', '稳定性评估结果')">
+                <i class="fas fa-download mr-2"></i>下载PNG
+            </button>
+        </div>
+        
+        <!-- 音色相似度评估 -->
+        <div class="chart-card">
+            <h2 class="text-xl font-semibold text-gray-700 mb-4">音色相似度评估结果</h2>
+            <div class="chart-container">
+                <canvas id="timbreChart"></canvas>
+            </div>
+            <button class="download-btn" onclick="downloadChart('timbreChart', '音色相似度评估结果')">
+                <i class="fas fa-download mr-2"></i>下载PNG
+            </button>
+        </div>
+        
+        <!-- 音质评估 -->
+        <div class="chart-card">
+            <h2 class="text-xl font-semibold text-gray-700 mb-4">音质评估结果</h2>
+            <div class="chart-container">
+                <canvas id="qualityChart"></canvas>
+            </div>
+            <button class="download-btn" onclick="downloadChart('qualityChart', '音质评估结果')">
+                <i class="fas fa-download mr-2"></i>下载PNG
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // 稳定性数据
+        const stabilityData = {
+            labels: ['解说', '播音腔', '英文男', '老年男声', '东北口音', '台湾口音', '标准男声', '北京口音', '童声男', '标准女声', '幼教风格', '陕西口音'],
+            datasets: [
+                {
+                    label: 'mini',
+                    data: [1.0, 1.0, 1.0, 1.0, 0.98, 0.97, 0.98, 0.95, 0.98, 0.95, 0.91, 0.91],
+                    borderColor: '#3b82f6',
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                    tension: 0.1,
+                    pointRadius: 4,
+                    pointHoverRadius: 6
+                },
+                {
+                    label: 'openspeech',
+                    data: [1.0, 1.0, 1.0, 0.78, 0.95, 0.88, 1.0, 0.98, 1.0, 0.97, 0.98, 0.98],
+                    borderColor: '#10b981',
+                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                    tension: 0.1,
+                    pointRadius: 4,
+                    pointHoverRadius: 6
+                },
+                {
+                    label: 'speech-02-hd',
+                    data: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+                    borderColor: '#f59e0b',
+                    backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                    tension: 0.1,
+                    pointRadius: 4,
+                    pointHoverRadius: 6
+                },
+                {
+                    label: 'speech-02-turbo',
+                    data: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+                    borderColor: '#8b5cf6',
+                    backgroundColor: 'rgba(139, 92, 246, 0.1)',
+                    tension: 0.1,
+                    pointRadius: 4,
+                    pointHoverRadius: 6
+                },
+                {
+                    label: 'vivid',
+                    data: [1.0, 1.0, 1.0, 0.95, 1.0, 1.0, 0.98, 0.95, 1.0, 0.98, 0.93, 0.93],
+                    borderColor: '#ec4899',
+                    backgroundColor: 'rgba(236, 72, 153, 0.1)',
+                    tension: 0.1,
+                    pointRadius: 4,
+                    pointHoverRadius: 6
+                }
+            ]
+        };
+
+        // 音色相似度数据
+        const timbreData = {
+            labels: ['东北口音', '陕西口音', '播音腔', '北京口音', '童声男', '台湾口音', '标准男声', '标准女声', '解说', '英文男', '老年男声', '幼教风格'],
+            datasets: [
+                {
+                    label: 'mini',
+                    data: [4.45, 3.62, 4.88, 2.7, 4.76, 3.11, 4.53, 4.0, 4.62, 4.99, 4.34, 3.4],
+                    borderColor: '#3b82f6',
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                    tension: 0.1,
+                    pointRadius: 4,
+                    pointHoverRadius: 6
+                },
+                {
+                    label: 'openspeech',
+                    data: [2.77, 1.46, 4.74, 1.84, 4.54, 2.23, 4.29, 3.89, 4.26, 5.0, 4.91, 3.89],
+                    borderColor: '#10b981',
+                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                    tension: 0.1,
+                    pointRadius: 4,
+                    pointHoverRadius: 6
+                },
+                {
+                    label: 'speech-02-hd',
+                    data: [2.72, 1.0, 4.85, 2.56, 3.92, 2.93, 4.93, 4.17, 4.88, 5.0, 4.87, 4.69],
+                    borderColor: '#f59e0b',
+                    backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                    tension: 0.1,
+                    pointRadius: 4,
+                    pointHoverRadius: 6
+                },
+                {
+                    label: 'speech-02-turbo',
+                    data: [2.6, 1.0, 4.7, 2.44, 3.53, 3.21, 4.8, 4.24, 4.76, 5.0, 4.84, 4.86],
+                    borderColor: '#8b5cf6',
+                    backgroundColor: 'rgba(139, 92, 246, 0.1)',
+                    tension: 0.1,
+                    pointRadius: 4,
+                    pointHoverRadius: 6
+                },
+                {
+                    label: 'vivid',
+                    data: [4.3, 3.51, 4.87, 2.28, 4.77, 3.42, 4.44, 4.02, 4.63, 4.99, 3.97, 3.55],
+                    borderColor: '#ec4899',
+                    backgroundColor: 'rgba(236, 72, 153, 0.1)',
+                    tension: 0.1,
+                    pointRadius: 4,
+                    pointHoverRadius: 6
+                }
+            ]
+        };
+
+        // 音质数据
+        const qualityData = {
+            labels: ['标准女声', '标准男声', '幼教风格', '老年男声', '东北口音', '陕西口音', '解说', '播音腔', '英文男', '童声男', '北京口音', '台湾口音'],
+            datasets: [
+                {
+                    label: 'mini',
+                    data: [4.79, 4.34, 4.3, 4.64, 4.82, 4.38, 4.92, 4.59, 4.6, 4.45, 4.52, 4.25],
+                    borderColor: '#3b82f6',
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                    tension: 0.1,
+                    pointRadius: 4,
+                    pointHoverRadius: 6
+                },
+                {
+                    label: 'openspeech',
+                    data: [4.76, 4.34, 4.25, 4.79, 4.67, 4.46, 4.98, 4.86, 4.79, 4.75, 4.71, 4.77],
+                    borderColor: '#10b981',
+                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                    tension: 0.1,
+                    pointRadius: 4,
+                    pointHoverRadius: 6
+                },
+                {
+                    label: 'speech-02-hd',
+                    data: [4.87, 4.85, 4.76, 4.58, 4.93, 4.85, 4.97, 4.91, 5.0, 4.9, 4.84, 4.56],
+                    borderColor: '#f59e0b',
+                    backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                    tension: 0.1,
+                    pointRadius: 4,
+                    pointHoverRadius: 6
+                },
+                {
+                    label: 'speech-02-turbo',
+                    data: [4.95, 4.86, 4.73, 4.93, 4.98, 4.78, 4.93, 4.98, 4.73, 5.0, 4.63, 4.68],
+                    borderColor: '#8b5cf6',
+                    backgroundColor: 'rgba(139, 92, 246, 0.1)',
+                    tension: 0.1,
+                    pointRadius: 4,
+                    pointHoverRadius: 6
+                },
+                {
+                    label: 'vivid',
+                    data: [4.73, 4.5, 4.31, 4.78, 4.86, 4.33, 4.83, 4.56, 4.48, 4.62, 4.54, 4.31],
+                    borderColor: '#ec4899',
+                    backgroundColor: 'rgba(236, 72, 153, 0.1)',
+                    tension: 0.1,
+                    pointRadius: 4,
+                    pointHoverRadius: 6
+                }
+            ]
+        };
+
+        // 图表配置
+        const chartOptions = {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: false,
+                    title: {
+                        display: true,
+                        text: '评估分数'
+                    }
+                },
+                x: {
+                    title: {
+                        display: true,
+                        text: '音色类型'
+                    }
+                }
+            },
+            plugins: {
+                tooltip: {
+                    mode: 'index',
+                    intersect: false,
+                },
+                legend: {
+                    position: 'top',
+                },
+                zoom: {
+                    pan: {
+                        enabled: true,
+                        mode: 'xy'
+                    },
+                    zoom: {
+                        wheel: {
+                            enabled: true,
+                        },
+                        pinch: {
+                            enabled: true
+                        },
+                        mode: 'xy',
+                    }
+                }
+            }
+        };
+        
+        // 下载图表
+        function downloadChart(chartId, fileName) {
+            const chartElement = document.getElementById(chartId);
+            html2canvas(chartElement).then(canvas => {
+                const link = document.createElement('a');
+                link.download = `${fileName}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+            });
+        }
+        
+        // 初始化所有图表
+        document.addEventListener('DOMContentLoaded', function() {
+            const stabilityCtx = document.getElementById('stabilityChart').getContext('2d');
+            const timbreCtx = document.getElementById('timbreChart').getContext('2d');
+            const qualityCtx = document.getElementById('qualityChart').getContext('2d');
+            
+            new Chart(stabilityCtx, {
+                type: 'line',
+                data: stabilityData,
+                options: chartOptions
+            });
+
+            new Chart(timbreCtx, {
+                type: 'line',
+                data: timbreData,
+                options: chartOptions
+            });
+
+            new Chart(qualityCtx, {
+                type: 'line',
+                data: qualityData,
+                options: chartOptions
+            });
+        });
+    </script>
+    <footer class="text-center text-gray-500 text-sm mt-8">
+        <p>created by <a href="https://space.coze.cn" class="text-blue-500 hover:underline">coze space</a></p>
+        <p>页面内容均由 AI 生成，仅供参考</p>
+    </footer>
+</body>
+</html>
