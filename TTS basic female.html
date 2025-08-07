@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TTS 基础维度评测结果看板-female</title>
+    <script src="https://cdn.tailwindcss.com/3.3.3"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        body {
+            font-family: 'Noto Sans SC', sans-serif;
+            background-color: #f8fafc;
+            color: #1e293b;
+        }
+        .card {
+            background-color: white;
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            transition: all 0.3s ease;
+        }
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        .chart-container {
+            height: 300px;
+            position: relative;
+        }
+        .nav-item {
+            position: relative;
+        }
+        .nav-item::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background-color: #4f46e5;
+            transition: width 0.3s ease;
+        }
+        .nav-item:hover::after {
+            width: 100%;
+        }
+        .active-nav::after {
+            width: 100%;
+        }
+        .table-container {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        table {
+            min-width: 100%;
+        }
+        th {
+            position: sticky;
+            top: 0;
+            background-color: white;
+            z-index: 10;
+        }
+    </style>
+</head>
+<body class="min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <h1 class="text-3xl font-bold text-center mb-8 text-gray-800">TTS 基础维度评测结果看板-female</h1>
+        
+        <div class="flex overflow-x-auto mb-8 pb-2">
+            <div class="flex space-x-4 mx-auto">
+                <a href="#stability" class="nav-item px-4 py-2 text-gray-600 hover:text-indigo-600 transition-colors">稳定性通过率</a>
+                <a href="#sound" class="nav-item px-4 py-2 text-gray-600 hover:text-indigo-600 transition-colors">音质</a>
+                <a href="#rhythm" class="nav-item px-4 py-2 text-gray-600 hover:text-indigo-600 transition-colors">韵律</a>
+                <a href="#paralanguage" class="nav-item px-4 py-2 text-gray-600 hover:text-indigo-600 transition-colors">副语言</a>
+                <a href="#humanlike" class="nav-item px-4 py-2 text-gray-600 hover:text-indigo-600 transition-colors">拟人度</a>
+            </div>
+        </div>
+
+        <!-- 稳定性通过率 -->
+        <div id="stability" class="card p-6 mb-8">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-semibold text-gray-800">稳定性通过率</h2>
+                <button class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg transition-colors flex items-center">
+                    <i class="fas fa-download mr-2"></i> 下载PNG
+                </button>
+            </div>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div class="chart-container">
+                    <canvas id="stabilityChart"></canvas>
+                </div>
+                
+                <div class="table-container">
+                    <table class="w-full border-collapse">
+                        <thead>
+                            <tr class="border-b border-gray-200">
+                                <th class="text-left py-3 px-4 text-gray-600 font-medium">模型</th>
+                                <th class="text-left py-3 px-4 text-gray-600 font-medium">数值</th>
+                                <th class="text-left py-3 px-4 text-gray-600 font-medium">与mini差值</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr class="border-b border-gray-100 hover:bg-gray-50">
+                                <td class="py-3 px-4">vivid</td>
+                                <td class="py-3 px-4">0.8000</td>
+                                <td class="py-3 px-4 text-red-500">-0.1400</td>
+                            </tr>
+                            <tr class="border-b border-gray-100 hover:bg-gray-50">
+                                <td class="py-3 px-4">火山</td>
+                                <td class="py-3 px-4">0.9200</td>
+                                <td class="py-3 px-4 text-red-500">-0.0200</td>
+                            </tr>
+                            <tr class="border-b border-gray-100 hover:bg-gray-50">
+                                <td class="py-3 px-4">mini</td>
+                                <td class="py-3 px-4">0.9400</td>
+                                <td class="py-3 px-4">0.0000</td>
+                            </tr>
+                            <tr class="border-b border-gray-100 hover:bg-gray-50">
+                                <td class="py-3 px-4">MInimax-speech-02-hd</td>
+                                <td class="py-3 px-4">0.9450</td>
+                                <td class="py-3 px-4 text-green-500">0.0050</td>
+                            </tr>
+                            <tr class="border-b border-gray-100 hover:bg-gray-50">
+                                <td class="py-3 px-4">MInimax-speech-02-turbo</td>
+                                <td class="py-3 px-4">0.9500</td>
+                                <td class="py-3 px-4 text-green-500">0.0100</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- 音质 -->
+        <div id="sound" class="card p-6 mb-8">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-semibold text-gray-800">音质</h2>
+                <button class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg transition-colors flex items-center">
+                    <i class="fas fa-download mr-2"></i> 下载PNG
+                </button>
+            </div>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div class="chart-container">
+                    <canvas id="soundChart"></canvas>
+                </div>
+                
+                <div class="table-container">
+                    <table class="w-full border-collapse">
+                        <thead>
+                            <tr class="border-b border-gray-200">
+                                <th class="text-left py-3 px-4 text-gray-600 font-medium">模型</th>
+                                <th class="text-left py-3 px-4 text-gray-600 font-medium">数值</th>
+                                <th class="text-left py-3 px-4 text-gray-600 font-medium">与mini差值</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr class="border-b border-gray-100 hover:bg-gray-50">
+                                <td class="py-3 px-4">vivid</td>
+                                <td class="py-3 px-4">4.3800</td>
+                                <td class="py-3 px-4 text-red-500">-0.3600</td>
+                            </tr>
+                            <tr class="border-b border-gray-100 hover:bg-gray-50">
+                                <td class="py-3 px-4">mini</td>
+                                <td class="py-3 px-4">4.7400</td>
+                                <td class="py-3 px-4">0.0000</td>
+                            </tr>
+                            <tr class="border-b border-gray-100 hover:bg-gray-50">
+                                <td class="py-3 px-4">火山</td>
+                                <td class="py-3 px-4">4.8400</td>
+                                <td class="py-3 px-4 text-green-500">0.1000</td>
+                            </tr>
+                            <tr class="border-b border-gray-100 hover:bg-gray-50">
+                                <td class="py-3 px-4">MInimax-speech-02-hd</td>
+                                <td class="py-3 px-4">4.9100</td>
+                                <td class="py-3 px-4 text-green-500">0.1700</td>
+                            </tr>
+                            <tr class="border-b border-gray-100 hover:bg-gray-50">
+                                <td class="py-3 px-4">MInimax-speech-02-turbo</td>
+                                <td class="py-3 px-4">4.9500</td>
+                                <td class="py-3 px-4 text-green-500">0.2100</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- 韵律 -->
+        <div id="rhythm" class="card p-6 mb-8">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-semibold text-gray-800">韵律</h2>
+                <button class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg transition-colors flex items-center">
+                    <i class="fas fa-download mr-2"></i> 下载PNG
+                </button>
+            </div>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div class="chart-container">
+                    <canvas id="rhythmChart"></canvas>
+                </div>
+                
+                <div class="table-container">
+                    <table class="w-full border-collapse">
+                        <thead>
+                            <tr class="border-b border-gray-200">
+                                <th class="text-left py-3 px-4 text-gray-600 font-medium">模型</th>
+                                <th class="text-left py-3 px-4 text-gray-600 font-medium">数值</th>
+                                <th class="text-left py-3 px-4 text-gray-600 font-medium">与mini差值</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr class="border-b border-gray-100 hover:bg-gray-50">
+                                <td class="py-3 px-4">mini</td>
+                                <td class="py-3 px-4">2.7900</td>
+                                <td class="py-3 px-4">0.0000</td>
+                            </tr>
+                            <tr class="border-b border-gray-100 hover:bg-gray-50">
+                                <td class="py-3 px-4">vivid</td>
+                                <td class="py-3 px-4">2.8400</td>
+                                <td class="py-3 px-4 text-green-500">0.0500</td>
+                            </tr>
+                            <tr class="border-b border-gray-100 hover:bg-gray-50">
+                                <td class="py-3 px-4">火山</td>
+                                <td class="py-3 px-4">3.4700</td>
+                                <td class="py-3 px-4 text-green-500">0.6800</td>
+                            </tr>
+                            <tr class="border-b border-gray-100 hover:bg-gray-50">
+                                <td class="py-3 px-4">MInimax-speech-02-turbo</td>
+                                <td class="py-3 px-4">3.7700</td>
+                                <td class="py-3 px-4 text-green-500">0.9800</td>
+                            </tr>
+                            <tr class="border-b border-gray-100 hover:bg-gray-50">
+                                <td class="py-3 px-4">MInimax-speech-02-hd</td>
+                                <td class="py-3 px-4">3.8600</td>
+                                <td class="py-3 px-4 text-green-500">1.0700</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- 副语言 -->
+        <div id="paralanguage" class="card p-6 mb-8">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-semibold text-gray-800">副语言</h2>
+                <button class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg transition-colors flex items-center">
+                    <i class="fas fa-download mr-2"></i> 下载PNG
+                </button>
+            </div>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div class="chart-container">
+                    <canvas id="paralanguageChart"></canvas>
+                </div>
+                
+                <div class="table-container">
+                    <table class="w-full border-collapse">
+                        <thead>
+                            <tr class="border-b border-gray-200">
+                                <th class="text-left py-3 px-4 text-gray-600 font-medium">模型</th>
+                                <th class="text-left py-3 px-4 text-gray-600 font-medium">数值</th>
+                                <th class="text-left py-3 px-4 text-gray-600 font-medium">与mini差值</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr class="border-b border-gray-100 hover:bg-gray-50">
+                                <td class="py-3 px-4">vivid</td>
+                                <td class="py-3 px-4">2.4667</td>
+                                <td class="py-3 px-4 text-red-500">-0.4000</td>
+                            </tr>
+                            <tr class="border-b border-gray-100 hover:bg-gray-50">
+                                <td class="py-3 px-4">mini</td>
+                                <td class="py-3 px-4">2.8667</td>
+                                <td class="py-3 px-4">0.0000</td>
+                            </tr>
+                            <tr class="border-b border-gray-100 hover:bg-gray-50">
+                                <td class="py-3 px-4">MInimax-speech-02-hd</td>
+                                <td class="py-3 px-4">2.8667</td>
+                                <td class="py-3 px-4">0.0000</td>
+                            </tr>
+                            <tr class="border-b border-gray-100 hover:bg-gray-50">
+                                <td class="py-3 px-4">火山</td>
+                                <td class="py-3 px-4">2.9333</td>
+                                <td class="py-3 px-4 text-green-500">0.0666</td>
+                            </tr>
+                            <tr class="border-b border-gray-100 hover:bg-gray-50">
+                                <td class="py-3 px-4">MInimax-speech-02-turbo</td>
+                                <td class="py-3 px-4">3.1333</td>
+                                <td class="py-3 px-4 text-green-500">0.2666</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- 拟人度 -->
+        <div id="humanlike" class="card p-6 mb-8">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-semibold text-gray-800">拟人度</h2>
+                <button class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg transition-colors flex items-center">
+                    <i class="fas fa-download mr-2"></i> 下载PNG
+                </button>
+            </div>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div class="chart-container">
+                    <canvas id="humanlikeChart"></canvas>
+                </div>
+                
+                <div class="table-container">
+                    <table class="w-full border-collapse">
+                        <thead>
+                            <tr class="border-b border-gray-200">
+                                <th class="text-left py-3 px-4 text-gray-600 font-medium">模型</th>
+                                <th class="text-left py-3 px-4 text-gray-600 font-medium">数值</th>
+                                <th class="text-left py-3 px-4 text-gray-600 font-medium">与mini差值</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr class="border-b border-gray-100 hover:bg-gray-50">
+                                <td class="py-3 px-4">mini</td>
+                                <td class="py-3 px-4">2.3300</td>
+                                <td class="py-3 px-4">0.0000</td>
+                            </tr>
+                            <tr class="border-b border-gray-100 hover:bg-gray-50">
+                                <td class="py-3 px-4">vivid</td>
+                                <td class="py-3 px-4">2.7800</td>
+                                <td class="py-3 px-4 text-green-500">0.4500</td>
+                            </tr>
+                            <tr class="border-b border-gray-100 hover:bg-gray-50">
+                                <td class="py-3 px-4">火山</td>
+                                <td class="py-3 px-4">3.4500</td>
+                                <td class="py-3 px-4 text-green-500">1.1200</td>
+                            </tr>
+                            <tr class="border-b border-gray-100 hover:bg-gray-50">
+                                <td class="py-3 px-4">MInimax-speech-02-turbo</td>
+                                <td class="py-3 px-4">3.6900</td>
+                                <td class="py-3 px-4 text-green-500">1.3600</td>
+                            </tr>
+                            <tr class="border-b border-gray-100 hover:bg-gray-50">
+                                <td class="py-3 px-4">MInimax-speech-02-hd</td>
+                                <td class="py-3 px-4">3.7500</td>
+                                <td class="py-3 px-4 text-green-500">1.4200</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="bg-gray-50 py-6">
+        <div class="container mx-auto px-4 text-center text-gray-500 text-sm">
+            <p>created by <a href="https://space.coze.cn" class="text-indigo-600 hover:text-indigo-800">coze space</a></p>
+            <p class="mt-1">页面内容均由 AI 生成，仅供参考</p>
+        </div>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // 平滑滚动导航
+            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+                anchor.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    document.querySelector(this.getAttribute('href')).scrollIntoView({
+                        behavior: 'smooth'
+                    });
+                });
+            });
+
+            // 设置当前活动导航
+            const navItems = document.querySelectorAll('.nav-item');
+            const sections = document.querySelectorAll('[id]');
+            
+            window.addEventListener('scroll', function() {
+                let current = '';
+                
+                sections.forEach(section => {
+                    const sectionTop = section.offsetTop;
+                    const sectionHeight = section.clientHeight;
+                    
+                    if (pageYOffset >= (sectionTop - 100)) {
+                        current = section.getAttribute('id');
+                    }
+                });
+                
+                navItems.forEach(item => {
+                    item.classList.remove('active-nav', 'text-indigo-600');
+                    if (item.getAttribute('href') === `#${current}`) {
+                        item.classList.add('active-nav', 'text-indigo-600');
+                    }
+                });
+            });
+
+            // 图表配置
+            const chartOptions = {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        title: {
+                            display: true,
+                            text: '与mini模型的差值'
+                        },
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.05)'
+                        }
+                    },
+                    x: {
+                        grid: {
+                            display: false
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                }
+            };
+
+            // 稳定性通过率图表
+            const stabilityCtx = document.getElementById('stabilityChart').getContext('2d');
+            new Chart(stabilityCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['vivid', '火山', 'mini', 'MInimax-speech-02-hd', 'MInimax-speech-02-turbo'],
+                    datasets: [{
+                        data: [-0.1400, -0.0200, 0.0000, 0.0050, 0.0100],
+                        backgroundColor: [
+                            'rgba(239, 68, 68, 0.7)',
+                            'rgba(239, 68, 68, 0.7)',
+                            'rgba(156, 163, 175, 0.7)',
+                            'rgba(16, 185, 129, 0.7)',
+                            'rgba(16, 185, 129, 0.7)'
+                        ],
+                        borderColor: [
+                            'rgba(239, 68, 68, 1)',
+                            'rgba(239, 68, 68, 1)',
+                            'rgba(156, 163, 175, 1)',
+                            'rgba(16, 185, 129, 1)',
+                            'rgba(16, 185, 129, 1)'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: chartOptions
+            });
+
+            // 音质图表
+            const soundCtx = document.getElementById('soundChart').getContext('2d');
+            new Chart(soundCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['vivid', 'mini', '火山', 'MInimax-speech-02-hd', 'MInimax-speech-02-turbo'],
+                    datasets: [{
+                        data: [-0.3600, 0.0000, 0.1000, 0.1700, 0.2100],
+                        backgroundColor: [
+                            'rgba(239, 68, 68, 0.7)',
+                            'rgba(156, 163, 175, 0.7)',
+                            'rgba(16, 185, 129, 0.7)',
+                            'rgba(16, 185, 129, 0.7)',
+                            'rgba(16, 185, 129, 0.7)'
+                        ],
+                        borderColor: [
+                            'rgba(239, 68, 68, 1)',
+                            'rgba(156, 163, 175, 1)',
+                            'rgba(16, 185, 129, 1)',
+                            'rgba(16, 185, 129, 1)',
+                            'rgba(16, 185, 129, 1)'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: chartOptions
+            });
+
+            // 韵律图表
+            const rhythmCtx = document.getElementById('rhythmChart').getContext('2d');
+            new Chart(rhythmCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['mini', 'vivid', '火山', 'MInimax-speech-02-turbo', 'MInimax-speech-02-hd'],
+                    datasets: [{
+                        data: [0.0000, 0.0500, 0.6800, 0.9800, 1.0700],
+                        backgroundColor: [
+                            'rgba(156, 163, 175, 0.7)',
+                            'rgba(16, 185, 129, 0.7)',
+                            'rgba(16, 185, 129, 0.7)',
+                            'rgba(16, 185, 129, 0.7)',
+                            'rgba(16, 185, 129, 0.7)'
+                        ],
+                        borderColor: [
+                            'rgba(156, 163, 175, 1)',
+                            'rgba(16, 185, 129, 1)',
+                            'rgba(16, 185, 129, 1)',
+                            'rgba(16, 185, 129, 1)',
+                            'rgba(16, 185, 129, 1)'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: chartOptions
+            });
+
+            // 副语言图表
+            const paralanguageCtx = document.getElementById('paralanguageChart').getContext('2d');
+            new Chart(paralanguageCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['vivid', 'mini', 'MInimax-speech-02-hd', '火山', 'MInimax-speech-02-turbo'],
+                    datasets: [{
+                        data: [-0.4000, 0.0000, 0.0000, 0.0666, 0.2666],
+                        backgroundColor: [
+                            'rgba(239, 68, 68, 0.7)',
+                            'rgba(156, 163, 175, 0.7)',
+                            'rgba(156, 163, 175, 0.7)',
+                            'rgba(16, 185, 129, 0.7)',
+                            'rgba(16, 185, 129, 0.7)'
+                        ],
+                        borderColor: [
+                            'rgba(239, 68, 68, 1)',
+                            'rgba(156, 163, 175, 1)',
+                            'rgba(156, 163, 175, 1)',
+                            'rgba(16, 185, 129, 1)',
+                            'rgba(16, 185, 129, 1)'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: chartOptions
+            });
+
+            // 拟人度图表
+            const humanlikeCtx = document.getElementById('humanlikeChart').getContext('2d');
+            new Chart(humanlikeCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['mini', 'vivid', '火山', 'MInimax-speech-02-turbo', 'MInimax-speech-02-hd'],
+                    datasets: [{
+                        data: [0.0000, 0.4500, 1.1200, 1.3600, 1.4200],
+                        backgroundColor: [
+                            'rgba(156, 163, 175, 0.7)',
+                            'rgba(16, 185, 129, 0.7)',
+                            'rgba(16, 185, 129, 0.7)',
+                            'rgba(16, 185, 129, 0.7)',
+                            'rgba(16, 185, 129, 0.7)'
+                        ],
+                        borderColor: [
+                            'rgba(156, 163, 175, 1)',
+                            'rgba(16, 185, 129, 1)',
+                            'rgba(16, 185, 129, 1)',
+                            'rgba(16, 185, 129, 1)',
+                            'rgba(16, 185, 129, 1)'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: chartOptions
+            });
+
+            // 下载按钮功能
+            document.querySelectorAll('button').forEach(button => {
+                button.addEventListener('click', function() {
+                    const chartId = this.closest('.card').querySelector('canvas').id;
+                    const canvas = document.getElementById(chartId);
+                    const dataURL = canvas.toDataURL('image/png');
+                    const link = document.createElement('a');
+                    link.download = `${chartId.replace('Chart', '')}_chart.png`;
+                    link.href = dataURL;
+                    link.click();
+                });
+            });
+        });
+    </script>
+</body>
+</html>
