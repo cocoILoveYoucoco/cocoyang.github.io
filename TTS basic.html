@@ -7,51 +7,27 @@
     <script src="https://cdn.tailwindcss.com/3.3.3"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
         body {
             font-family: 'Noto Sans SC', sans-serif;
             background-color: #f8fafc;
             color: #1e293b;
         }
-        .card {
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-            transition: all 0.3s ease;
+        .tab-content {
+            display: none;
         }
-        .card:hover {
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
         }
         .chart-container {
-            height: 280px;
-            width: 100%;
+            height: 300px;
             position: relative;
-        }
-        .btn-download {
-            background-color: #3b82f6;
-            color: white;
-            transition: all 0.2s ease;
-        }
-        .btn-download:hover {
-            background-color: #2563eb;
-            transform: translateY(-1px);
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 16px;
-        }
-        th, td {
-            padding: 12px;
-            text-align: left;
-            border-bottom: 1px solid #e5e7eb;
-        }
-        th {
-            background-color: #f3f4f6;
-            font-weight: 600;
-        }
-        tr:hover {
-            background-color: #f9fafb;
         }
         .positive {
             color: #10b981;
@@ -59,393 +35,507 @@
         .negative {
             color: #ef4444;
         }
+        .glassmorphism {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+        }
     </style>
 </head>
 <body class="min-h-screen">
-    <div class="container mx-auto py-8 px-4">
-        <h1 class="text-3xl font-bold text-center mb-8">TTS 基础维度评测结果看板</h1>
-        <p class="text-center text-gray-600 mb-12">以mini模型为基准，差值=各模型-mini</p>
-
-        <div class="grid grid-cols-1 gap-8">
-            <div class="card p-6">
-                <h2 class="text-xl font-semibold mb-4">稳定性通过率</h2>
-                <div class="chart-container mb-4">
-                    <canvas id="chartStability"></canvas>
-                </div>
-                
-                <table>
-                    <thead>
-                        <tr>
-                            <th>模型名称</th>
-                            <th>原始值</th>
-                            <th>差值</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>mini</td>
-                            <td>0.9675</td>
-                            <td>-</td>
-                        </tr>
-                        <tr>
-                            <td>vivid</td>
-                            <td>0.8825</td>
-                            <td class="negative">-0.0850</td>
-                        </tr>
-                        <tr>
-                            <td>火山</td>
-                            <td>0.9250</td>
-                            <td class="negative">-0.0425</td>
-                        </tr>
-                        <tr>
-                            <td>MInimax-speech-02-hd</td>
-                            <td>0.9725</td>
-                            <td class="positive">+0.0050</td>
-                        </tr>
-                        <tr>
-                            <td>MInimax-speech-02-turbo</td>
-                            <td>0.9750</td>
-                            <td class="positive">+0.0075</td>
-                        </tr>
-                    </tbody>
-                </table>
-                
-                <button class="btn-download px-4 py-2 rounded-md text-sm font-medium mt-4" onclick="downloadChart('chartStability', '稳定性通过率')">
-                    <i class="fas fa-download mr-2"></i>下载PNG
+    <div class="container mx-auto px-4 py-8 max-w-6xl">
+        <h1 class="text-3xl font-bold text-center mb-8 text-gray-800">TTS 基础维度评测结果看板</h1>
+        
+        <!-- 标签导航 -->
+        <div class="flex overflow-x-auto mb-8 border-b border-gray-200">
+            <button class="tab-btn px-6 py-3 font-medium text-gray-600 hover:text-indigo-600 transition-colors border-b-2 border-transparent hover:border-indigo-400" data-tab="stability">稳定性通过率</button>
+            <button class="tab-btn px-6 py-3 font-medium text-gray-600 hover:text-indigo-600 transition-colors border-b-2 border-transparent hover:border-indigo-400" data-tab="sound">音质</button>
+            <button class="tab-btn px-6 py-3 font-medium text-gray-600 hover:text-indigo-600 transition-colors border-b-2 border-transparent hover:border-indigo-400" data-tab="rhythm">韵律</button>
+            <button class="tab-btn px-6 py-3 font-medium text-gray-600 hover:text-indigo-600 transition-colors border-b-2 border-transparent hover:border-indigo-400" data-tab="paralanguage">副语言</button>
+            <button class="tab-btn px-6 py-3 font-medium text-gray-600 hover:text-indigo-600 transition-colors border-b-2 border-transparent hover:border-indigo-400" data-tab="humanlike">拟人度</button>
+        </div>
+        
+        <!-- 稳定性通过率看板 -->
+        <div id="stability" class="tab-content active glassmorphism p-6 mb-8">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-semibold text-gray-800">稳定性通过率对比 (基准: mini=0.9675)</h2>
+                <button class="download-btn px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors flex items-center">
+                    <i class="fas fa-download mr-2"></i> 下载图表
                 </button>
             </div>
-
-            <div class="card p-6">
-                <h2 class="text-xl font-semibold mb-4">音质</h2>
-                <div class="chart-container mb-4">
-                    <canvas id="chartSoundQuality"></canvas>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div class="chart-container">
+                    <canvas id="stabilityChart"></canvas>
                 </div>
                 
-                <table>
-                    <thead>
-                        <tr>
-                            <th>模型名称</th>
-                            <th>原始值</th>
-                            <th>差值</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>mini</td>
-                            <td>4.8000</td>
-                            <td>-</td>
-                        </tr>
-                        <tr>
-                            <td>vivid</td>
-                            <td>4.5000</td>
-                            <td class="negative">-0.3000</td>
-                        </tr>
-                        <tr>
-                            <td>火山</td>
-                            <td>4.8800</td>
-                            <td class="positive">+0.0800</td>
-                        </tr>
-                        <tr>
-                            <td>MInimax-speech-02-hd</td>
-                            <td>4.9400</td>
-                            <td class="positive">+0.1400</td>
-                        </tr>
-                        <tr>
-                            <td>MInimax-speech-02-turbo</td>
-                            <td>4.9700</td>
-                            <td class="positive">+0.1700</td>
-                        </tr>
-                    </tbody>
-                </table>
-                
-                <button class="btn-download px-4 py-2 rounded-md text-sm font-medium mt-4" onclick="downloadChart('chartSoundQuality', '音质')">
-                    <i class="fas fa-download mr-2"></i>下载PNG
+                <div>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full bg-white rounded-lg overflow-hidden">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">模型</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">原始值</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">差值</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-200">
+                                <tr>
+                                    <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">vivid</td>
+                                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">0.8825</td>
+                                    <td class="px-4 py-3 whitespace-nowrap text-sm negative">-0.0850</td>
+                                </tr>
+                                <tr class="bg-gray-50">
+                                    <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">火山</td>
+                                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">0.9250</td>
+                                    <td class="px-4 py-3 whitespace-nowrap text-sm negative">-0.0425</td>
+                                </tr>
+                                <tr>
+                                    <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">hd</td>
+                                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">0.9725</td>
+                                    <td class="px-4 py-3 whitespace-nowrap text-sm positive">+0.0050</td>
+                                </tr>
+                                <tr class="bg-gray-50">
+                                    <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">turbo</td>
+                                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">0.9750</td>
+                                    <td class="px-4 py-3 whitespace-nowrap text-sm positive">+0.0075</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 音质看板 -->
+        <div id="sound" class="tab-content glassmorphism p-6 mb-8">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-semibold text-gray-800">音质对比 (基准: mini=4.8)</h2>
+                <button class="download-btn px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors flex items-center">
+                    <i class="fas fa-download mr-2"></i> 下载图表
                 </button>
             </div>
-
-            <div class="card p-6">
-                <h2 class="text-xl font-semibold mb-4">韵律</h2>
-                <div class="chart-container mb-4">
-                    <canvas id="chartRhythm"></canvas>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div class="chart-container">
+                    <canvas id="soundChart"></canvas>
                 </div>
                 
-                <table>
-                    <thead>
-                        <tr>
-                            <th>模型名称</th>
-                            <th>原始值</th>
-                            <th>差值</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>mini</td>
-                            <td>3.1300</td>
-                            <td>-</td>
-                        </tr>
-                        <tr>
-                            <td>vivid</td>
-                            <td>3.0800</td>
-                            <td class="negative">-0.0500</td>
-                        </tr>
-                        <tr>
-                            <td>火山</td>
-                            <td>3.4000</td>
-                            <td class="positive">+0.2700</td>
-                        </tr>
-                        <tr>
-                            <td>MInimax-speech-02-hd</td>
-                            <td>3.8100</td>
-                            <td class="positive">+0.6800</td>
-                        </tr>
-                        <tr>
-                            <td>MInimax-speech-02-turbo</td>
-                            <td>3.7700</td>
-                            <td class="positive">+0.6400</td>
-                        </tr>
-                    </tbody>
-                </table>
-                
-                <button class="btn-download px-4 py-2 rounded-md text-sm font-medium mt-4" onclick="downloadChart('chartRhythm', '韵律')">
-                    <i class="fas fa-download mr-2"></i>下载PNG
+                <div>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full bg-white rounded-lg overflow-hidden">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">模型</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">原始值</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">差值</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-200">
+                                <tr>
+                                    <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">vivid</td>
+                                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">4.50</td>
+                                    <td class="px-4 py-3 whitespace-nowrap text-sm negative">-0.30</td>
+                                </tr>
+                                <tr class="bg-gray-50">
+                                    <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">火山</td>
+                                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">4.88</td>
+                                    <td class="px-4 py-3 whitespace-nowrap text-sm positive">+0.08</td>
+                                </tr>
+                                <tr>
+                                    <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">hd</td>
+                                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">4.94</td>
+                                    <td class="px-4 py-3 whitespace-nowrap text-sm positive">+0.14</td>
+                                </tr>
+                                <tr class="bg-gray-50">
+                                    <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">turbo</td>
+                                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">4.97</td>
+                                    <td class="px-4 py-3 whitespace-nowrap text-sm positive">+0.17</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 韵律看板 -->
+        <div id="rhythm" class="tab-content glassmorphism p-6 mb-8">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-semibold text-gray-800">韵律对比 (基准: mini=3.13)</h2>
+                <button class="download-btn px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors flex items-center">
+                    <i class="fas fa-download mr-2"></i> 下载图表
                 </button>
             </div>
-
-            <div class="card p-6">
-                <h2 class="text-xl font-semibold mb-4">副语言</h2>
-                <div class="chart-container mb-4">
-                    <canvas id="chartParalanguage"></canvas>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div class="chart-container">
+                    <canvas id="rhythmChart"></canvas>
                 </div>
                 
-                <table>
-                    <thead>
-                        <tr>
-                            <th>模型名称</th>
-                            <th>原始值</th>
-                            <th>差值</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>mini</td>
-                            <td>2.9556</td>
-                            <td>-</td>
-                        </tr>
-                        <tr>
-                            <td>vivid</td>
-                            <td>2.5556</td>
-                            <td class="negative">-0.4000</td>
-                        </tr>
-                        <tr>
-                            <td>火山</td>
-                            <td>2.7333</td>
-                            <td class="negative">-0.2223</td>
-                        </tr>
-                        <tr>
-                            <td>MInimax-speech-02-hd</td>
-                            <td>2.9556</td>
-                            <td>0.0000</td>
-                        </tr>
-                        <tr>
-                            <td>MInimax-speech-02-turbo</td>
-                            <td>2.9222</td>
-                            <td class="negative">-0.0334</td>
-                        </tr>
-                    </tbody>
-                </table>
-                
-                <button class="btn-download px-4 py-2 rounded-md text-sm font-medium mt-4" onclick="downloadChart('chartParalanguage', '副语言')">
-                    <i class="fas fa-download mr-2"></i>下载PNG
+                <div>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full bg-white rounded-lg overflow-hidden">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">模型</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">原始值</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">差值</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-200">
+                                <tr>
+                                    <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">vivid</td>
+                                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">3.08</td>
+                                    <td class="px-4 py-3 whitespace-nowrap text-sm negative">-0.05</td>
+                                </tr>
+                                <tr class="bg-gray-50">
+                                    <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">火山</td>
+                                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">3.40</td>
+                                    <td class="px-4 py-3 whitespace-nowrap text-sm positive">+0.27</td>
+                                </tr>
+                                <tr>
+                                    <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">turbo</td>
+                                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">3.77</td>
+                                    <td class="px-4 py-3 whitespace-nowrap text-sm positive">+0.64</td>
+                                </tr>
+                                <tr class="bg-gray-50">
+                                    <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">hd</td>
+                                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">3.81</td>
+                                    <td class="px-4 py-3 whitespace-nowrap text-sm positive">+0.68</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 副语言看板 -->
+        <div id="paralanguage" class="tab-content glassmorphism p-6 mb-8">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-semibold text-gray-800">副语言对比 (基准: mini=2.95555)</h2>
+                <button class="download-btn px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors flex items-center">
+                    <i class="fas fa-download mr-2"></i> 下载图表
                 </button>
             </div>
-
-            <div class="card p-6">
-                <h2 class="text-xl font-semibold mb-4">拟人度</h2>
-                <div class="chart-container mb-4">
-                    <canvas id="chartAnthropomorphism"></canvas>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div class="chart-container">
+                    <canvas id="paralanguageChart"></canvas>
                 </div>
                 
-                <table>
-                    <thead>
-                        <tr>
-                            <th>模型名称</th>
-                            <th>原始值</th>
-                            <th>差值</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>mini</td>
-                            <td>3.3200</td>
-                            <td>-</td>
-                        </tr>
-                        <tr>
-                            <td>vivid</td>
-                            <td>3.2900</td>
-                            <td class="negative">-0.0300</td>
-                        </tr>
-                        <tr>
-                            <td>火山</td>
-                            <td>3.5300</td>
-                            <td class="positive">+0.2100</td>
-                        </tr>
-                        <tr>
-                            <td>MInimax-speech-02-hd</td>
-                            <td>3.8300</td>
-                            <td class="positive">+0.5100</td>
-                        </tr>
-                        <tr>
-                            <td>MInimax-speech-02-turbo</td>
-                            <td>3.8300</td>
-                            <td class="positive">+0.5100</td>
-                        </tr>
-                    </tbody>
-                </table>
-                
-                <button class="btn-download px-4 py-2 rounded-md text-sm font-medium mt-4" onclick="downloadChart('chartAnthropomorphism', '拟人度')">
-                    <i class="fas fa-download mr-2"></i>下载PNG
+                <div>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full bg-white rounded-lg overflow-hidden">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">模型</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">原始值</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">差值</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-200">
+                                <tr>
+                                    <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">vivid</td>
+                                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">2.55555</td>
+                                    <td class="px-4 py-3 whitespace-nowrap text-sm negative">-0.40000</td>
+                                </tr>
+                                <tr class="bg-gray-50">
+                                    <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">火山</td>
+                                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">2.73330</td>
+                                    <td class="px-4 py-3 whitespace-nowrap text-sm negative">-0.22225</td>
+                                </tr>
+                                <tr>
+                                    <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">turbo</td>
+                                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">2.92220</td>
+                                    <td class="px-4 py-3 whitespace-nowrap text-sm negative">-0.03335</td>
+                                </tr>
+                                <tr class="bg-gray-50">
+                                    <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">hd</td>
+                                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">2.95555</td>
+                                    <td class="px-4 py-3 whitespace-nowrap text-sm">0.00000</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 拟人度看板 -->
+        <div id="humanlike" class="tab-content glassmorphism p-6 mb-8">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-semibold text-gray-800">拟人度对比 (基准: mini=3.32)</h2>
+                <button class="download-btn px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors flex items-center">
+                    <i class="fas fa-download mr-2"></i> 下载图表
                 </button>
+            </div>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div class="chart-container">
+                    <canvas id="humanlikeChart"></canvas>
+                </div>
+                
+                <div>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full bg-white rounded-lg overflow-hidden">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">模型</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">原始值</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">差值</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-200">
+                                <tr>
+                                    <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">vivid</td>
+                                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">3.29</td>
+                                    <td class="px-4 py-3 whitespace-nowrap text-sm negative">-0.03</td>
+                                </tr>
+                                <tr class="bg-gray-50">
+                                    <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">火山</td>
+                                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">3.53</td>
+                                    <td class="px-4 py-3 whitespace-nowrap text-sm positive">+0.21</td>
+                                </tr>
+                                <tr>
+                                    <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">hd</td>
+                                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">3.83</td>
+                                    <td class="px-4 py-3 whitespace-nowrap text-sm positive">+0.51</td>
+                                </tr>
+                                <tr class="bg-gray-50">
+                                    <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">turbo</td>
+                                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">3.83</td>
+                                    <td class="px-4 py-3 whitespace-nowrap text-sm positive">+0.51</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 
-    <footer class="bg-gray-100 py-6 mt-12">
-        <div class="container mx-auto px-4 text-center text-gray-600 text-sm">
-            <p>created by <a href="https://space.coze.cn" class="text-blue-600 hover:text-blue-800">coze space</a></p>
-            <p class="mt-1">页面内容均由 AI 生成，仅供参考</p>
-        </div>
+    <footer class="bg-gray-50 py-6 text-center text-gray-500 text-sm">
+        <p>created by <a href="https://space.coze.cn" class="text-indigo-600 hover:text-indigo-800">coze space</a></p>
+        <p class="mt-1">页面内容均由 AI 生成，仅供参考</p>
     </footer>
 
     <script>
-        // 数据
-        const data = {
-            dimensions: [
-                {
-                    name: "稳定性通过率",
-                    data: [
-                        { model: "vivid", diff: -0.0850 },
-                        { model: "火山", diff: -0.0425 },
-                        { model: "MInimax-speech-02-hd", diff: 0.0050 },
-                        { model: "MInimax-speech-02-turbo", diff: 0.0075 }
-                    ]
-                },
-                {
-                    name: "音质",
-                    data: [
-                        { model: "vivid", diff: -0.3000 },
-                        { model: "火山", diff: 0.0800 },
-                        { model: "MInimax-speech-02-hd", diff: 0.1400 },
-                        { model: "MInimax-speech-02-turbo", diff: 0.1700 }
-                    ]
-                },
-                {
-                    name: "韵律",
-                    data: [
-                        { model: "vivid", diff: -0.0500 },
-                        { model: "火山", diff: 0.2700 },
-                        { model: "MInimax-speech-02-turbo", diff: 0.6400 },
-                        { model: "MInimax-speech-02-hd", diff: 0.6800 }
-                    ]
-                },
-                {
-                    name: "副语言",
-                    data: [
-                        { model: "vivid", diff: -0.4000 },
-                        { model: "火山", diff: -0.2223 },
-                        { model: "MInimax-speech-02-turbo", diff: -0.0334 },
-                        { model: "MInimax-speech-02-hd", diff: 0.0000 }
-                    ]
-                },
-                {
-                    name: "拟人度",
-                    data: [
-                        { model: "vivid", diff: -0.0300 },
-                        { model: "火山", diff: 0.2100 },
-                        { model: "MInimax-speech-02-hd", diff: 0.5100 },
-                        { model: "MInimax-speech-02-turbo", diff: 0.5100 }
-                    ]
-                }
-            ]
-        };
+        // 标签页切换
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const tabId = btn.getAttribute('data-tab');
+                
+                // 移除所有标签按钮的激活状态
+                document.querySelectorAll('.tab-btn').forEach(b => {
+                    b.classList.remove('border-indigo-600', 'text-indigo-600');
+                    b.classList.add('border-transparent', 'text-gray-600');
+                });
+                
+                // 添加当前标签按钮的激活状态
+                btn.classList.add('border-indigo-600', 'text-indigo-600');
+                btn.classList.remove('border-transparent', 'text-gray-600');
+                
+                // 隐藏所有内容
+                document.querySelectorAll('.tab-content').forEach(content => {
+                    content.classList.remove('active');
+                });
+                
+                // 显示当前内容
+                document.getElementById(tabId).classList.add('active');
+            });
+        });
 
-        // 创建图表函数
-        function createChart(chartId, dimensionName) {
-            const dimension = data.dimensions.find(d => d.name === dimensionName);
-            const sortedData = [...dimension.data].sort((a, b) => a.diff - b.diff);
-            
-            const ctx = document.getElementById(chartId).getContext('2d');
-            return new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: sortedData.map(item => item.model),
-                    datasets: [{
-                        label: '与mini模型的差值',
-                        data: sortedData.map(item => item.diff),
-                        backgroundColor: sortedData.map(item => 
-                            item.diff < 0 ? 'rgba(239, 68, 68, 0.7)' : 'rgba(16, 185, 129, 0.7)'
-                        ),
-                        borderColor: sortedData.map(item => 
-                            item.diff < 0 ? 'rgba(239, 68, 68, 1)' : 'rgba(16, 185, 129, 1)'
-                        ),
-                        borderWidth: 1
-                    }]
+        // 图表数据
+        const modelNames = ['vivid', '火山', 'hd', 'turbo'];
+        
+        // 稳定性通过率数据
+        const stabilityData = {
+            labels: modelNames,
+            datasets: [{
+                label: '差值',
+                data: [-0.0850, -0.0425, 0.0050, 0.0075],
+                backgroundColor: function(context) {
+                    const value = context.dataset.data[context.dataIndex];
+                    return value >= 0 ? '#10b981' : '#ef4444';
                 },
-                options: {
-                    indexAxis: 'y',
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            display: false
-                        },
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    return `${dimensionName}: ${context.raw.toFixed(4)}`;
-                                }
-                            }
-                        },
-                        datalabels: {
-                            display: false
-                        }
+                borderColor: function(context) {
+                    const value = context.dataset.data[context.dataIndex];
+                    return value >= 0 ? '#059669' : '#dc2626';
+                },
+                borderWidth: 1
+            }]
+        };
+        
+        // 音质数据
+        const soundData = {
+            labels: modelNames,
+            datasets: [{
+                label: '差值',
+                data: [-0.30, 0.08, 0.14, 0.17],
+                backgroundColor: function(context) {
+                    const value = context.dataset.data[context.dataIndex];
+                    return value >= 0 ? '#10b981' : '#ef4444';
+                },
+                borderColor: function(context) {
+                    const value = context.dataset.data[context.dataIndex];
+                    return value >= 0 ? '#059669' : '#dc2626';
+                },
+                borderWidth: 1
+            }]
+        };
+        
+        // 韵律数据
+        const rhythmData = {
+            labels: ['vivid', '火山', 'turbo', 'hd'],
+            datasets: [{
+                label: '差值',
+                data: [-0.05, 0.27, 0.64, 0.68],
+                backgroundColor: function(context) {
+                    const value = context.dataset.data[context.dataIndex];
+                    return value >= 0 ? '#10b981' : '#ef4444';
+                },
+                borderColor: function(context) {
+                    const value = context.dataset.data[context.dataIndex];
+                    return value >= 0 ? '#059669' : '#dc2626';
+                },
+                borderWidth: 1
+            }]
+        };
+        
+        // 副语言数据
+        const paralanguageData = {
+            labels: modelNames,
+            datasets: [{
+                label: '差值',
+                data: [-0.40000, -0.22225, 0.00000, -0.03335],
+                backgroundColor: function(context) {
+                    const value = context.dataset.data[context.dataIndex];
+                    return value >= 0 ? '#10b981' : '#ef4444';
+                },
+                borderColor: function(context) {
+                    const value = context.dataset.data[context.dataIndex];
+                    return value >= 0 ? '#059669' : '#dc2626';
+                },
+                borderWidth: 1
+            }]
+        };
+        
+        // 拟人度数据
+        const humanlikeData = {
+            labels: modelNames,
+            datasets: [{
+                label: '差值',
+                data: [-0.03, 0.21, 0.51, 0.51],
+                backgroundColor: function(context) {
+                    const value = context.dataset.data[context.dataIndex];
+                    return value >= 0 ? '#10b981' : '#ef4444';
+                },
+                borderColor: function(context) {
+                    const value = context.dataset.data[context.dataIndex];
+                    return value >= 0 ? '#059669' : '#dc2626';
+                },
+                borderWidth: 1
+            }]
+        };
+        
+        // 图表配置
+        const chartOptions = {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: false,
+                    grid: {
+                        color: 'rgba(0, 0, 0, 0.05)'
                     },
-                    scales: {
-                        x: {
-                            grid: {
-                                color: 'rgba(0, 0, 0, 0.05)'
-                            },
-                            ticks: {
-                                callback: function(value) {
-                                    return value.toFixed(4);
-                                }
-                            }
-                        },
-                        y: {
-                            grid: {
-                                display: false
-                            }
+                    ticks: {
+                        callback: function(value) {
+                            return value.toFixed(2);
+                        }
+                    }
+                },
+                x: {
+                    grid: {
+                        display: false
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return `差值: ${context.raw.toFixed(4)}`;
                         }
                     }
                 }
+            }
+        };
+        
+        // 初始化图表
+        const stabilityChart = new Chart(
+            document.getElementById('stabilityChart'),
+            {
+                type: 'bar',
+                data: stabilityData,
+                options: chartOptions
+            }
+        );
+        
+        const soundChart = new Chart(
+            document.getElementById('soundChart'),
+            {
+                type: 'bar',
+                data: soundData,
+                options: chartOptions
+            }
+        );
+        
+        const rhythmChart = new Chart(
+            document.getElementById('rhythmChart'),
+            {
+                type: 'bar',
+                data: rhythmData,
+                options: chartOptions
+            }
+        );
+        
+        const paralanguageChart = new Chart(
+            document.getElementById('paralanguageChart'),
+            {
+                type: 'bar',
+                data: paralanguageData,
+                options: chartOptions
+            }
+        );
+        
+        const humanlikeChart = new Chart(
+            document.getElementById('humanlikeChart'),
+            {
+                type: 'bar',
+                data: humanlikeData,
+                options: chartOptions
+            }
+        );
+        
+        // 下载图表功能
+        document.querySelectorAll('.download-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const tabContent = this.closest('.tab-content');
+                const chartContainer = tabContent.querySelector('.chart-container');
+                
+                html2canvas(chartContainer).then(canvas => {
+                    const link = document.createElement('a');
+                    link.download = `${tabContent.id}_chart.png`;
+                    link.href = canvas.toDataURL('image/png');
+                    link.click();
+                });
             });
-        }
-
-        // 下载图表函数
-        function downloadChart(chartId, fileName) {
-            const canvas = document.getElementById(chartId);
-            const link = document.createElement('a');
-            link.download = `${fileName}_对比分析.png`;
-            link.href = canvas.toDataURL('image/png');
-            link.click();
-        }
-
-        // 页面加载完成后初始化所有图表
-        document.addEventListener('DOMContentLoaded', function() {
-            createChart('chartStability', '稳定性通过率');
-            createChart('chartSoundQuality', '音质');
-            createChart('chartRhythm', '韵律');
-            createChart('chartParalanguage', '副语言');
-            createChart('chartAnthropomorphism', '拟人度');
         });
     </script>
 </body>
